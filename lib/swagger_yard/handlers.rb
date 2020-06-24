@@ -32,4 +32,30 @@ module SwaggerYard::Handlers
       end
     end
   end
+
+  class RSpecDescribeHandler < YARD::Handlers::Ruby::Base
+    handles method_call(:describe)
+
+    process do
+      method_name = statement.parameters.first.jump(:string_content).source
+      # pretend as class to have #children method
+      # TODO subclass it in DescribeObject
+      object = ClassObject.new(namespace, method_name)
+      register(object)
+      parse_block(statement.last.last, owner: object)
+    end
+  end
+
+  class RSpecItHandler < YARD::Handlers::Ruby::Base
+    handles method_call(:it)
+
+    def process
+      return if owner.nil?
+
+      method_name = statement.parameters.first.jump(:string_content).source
+      object = MethodObject.new(namespace, method_name, scope)
+      register(object)
+      owner.children << object
+    end
+  end
 end
